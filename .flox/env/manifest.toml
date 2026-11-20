@@ -19,17 +19,25 @@ ruby.pkg-group = "ruby"
 # The pg gem ships prebuilt with its own libpq, so nothing ABI-links to them.
 postgresql.pkg-path = "postgresql_13"
 postgresql.pkg-group = "postgres"
-# The pg gem ships prebuilt for macOS and x86_64 Linux; aarch64-linux compiles
-# it and needs pg_config and libpq headers from the dev output.
-postgresql.outputs = ["out", "lib", "dev"]
+# Only `out`. The `dev` output (pg_config, headers) alone pulled ~300 MB of
+# compressed toolchain on macOS (LLVM 20 + 21, Clang 21, apple-sdk, Python).
+# The pg gem ships prebuilt with its own libpq for arm64-darwin, x86_64-darwin
+# and x86_64-linux; only aarch64-linux compiles it, so libpq below carries the
+# headers for that one system.
+postgresql.outputs = ["out"]
 pgvector.pkg-path = "postgresql13Packages.pgvector"
 pgvector.pkg-group = "postgres"
+libpq.pkg-path = "libpq"
+libpq.outputs = ["out", "dev"]
+libpq.systems = ["aarch64-linux"]
+libpq.pkg-group = "postgres"
 redis.pkg-path = "redis"         # ← .mise.toml 6.0.9 / docker-compose 7.0; unpinned
 redis.pkg-group = "ruby"
-# ruby-vips loads libvips at runtime; its `out` output (the shared library) is
-# not installed by default. mini_magick shells out to ImageMagick.
+# ruby-vips loads libvips at runtime from the `out` output, which is not
+# installed by default. The `bin` output (vips CLI, vipsprofile) is skipped:
+# it drags in a Python 3.11 closure. mini_magick shells out to ImageMagick.
 vips.pkg-path = "vips"
-vips.outputs = ["bin", "out"]
+vips.outputs = ["out"]
 vips.pkg-group = "ruby"
 imagemagick.pkg-path = "imagemagick"
 imagemagick.pkg-group = "ruby"
@@ -61,10 +69,9 @@ rustc.systems = ["aarch64-linux"]
 nodejs.pkg-path = "nodejs_22"
 nodejs.version = "22.23.4"       # ← .nvmrc, engines.node ">=22.23.4 <23"
 nodejs.pkg-group = "node"
-# .yarnrc.yml sets yarnPath to .yarn/releases/yarn-4.1.0.cjs, so any yarn
-# binary delegates to the committed 4.1.0. Classic yarn matches .mise.toml.
-yarn.pkg-path = "yarn"
-yarn.pkg-group = "node"
+# No Yarn package: the catalog's yarn pulls in a second Node (24) just to
+# start. .yarnrc.yml pins yarnPath to the committed
+# .yarn/releases/yarn-4.1.0.cjs, so .flox/bin/yarn runs that with this Node.
 
 [vars]
 PGPORT = "5432"
@@ -77,13 +84,17 @@ REDIS_URL = "redis://localhost:6379"
 # fork-safe there — every request segfaulted in PG::Connection#connect_start
 # until this was set. Local dev has no Kerberos, so disabling it costs nothing.
 PGGSSENCMODE = "disable"
+# Bundler re-caches into vendor/cache whenever that directory exists and, by
+# default, deletes the .gem files the lockfile no longer needs, which dirties
+# the committed tree (6 stale gems today). Don't prune.
+BUNDLE_NO_PRUNE = "true"
 
 [hook]
 on-activate = '''
   # Gems (and foreman, which bin/dev installs) go to the Flox cache, never to
   # the read-only Ruby install or ~/.gem.
   export GEM_HOME="$FLOX_ENV_CACHE/gems"
-  export PATH="$GEM_HOME/bin:$PATH"
+  export PATH="$FLOX_ENV_PROJECT/.flox/bin:$GEM_HOME/bin:$PATH"
   export PGDATA="$FLOX_ENV_CACHE/postgres"
   export FOREM_PGSOCKET="$FLOX_ENV_CACHE/pgsock"
   mkdir -p "$GEM_HOME" "$FOREM_PGSOCKET" "$FLOX_ENV_CACHE/redis"

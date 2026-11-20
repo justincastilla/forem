@@ -22,6 +22,17 @@
         "pkg-path": "imagemagick",
         "pkg-group": "ruby"
       },
+      "libpq": {
+        "pkg-path": "libpq",
+        "pkg-group": "postgres",
+        "systems": [
+          "aarch64-linux"
+        ],
+        "outputs": [
+          "out",
+          "dev"
+        ]
+      },
       "libyaml": {
         "pkg-path": "libyaml",
         "pkg-group": "ruby",
@@ -55,9 +66,7 @@
         "pkg-path": "postgresql_13",
         "pkg-group": "postgres",
         "outputs": [
-          "out",
-          "lib",
-          "dev"
+          "out"
         ]
       },
       "redis": {
@@ -80,16 +89,12 @@
         "pkg-path": "vips",
         "pkg-group": "ruby",
         "outputs": [
-          "bin",
           "out"
         ]
-      },
-      "yarn": {
-        "pkg-path": "yarn",
-        "pkg-group": "node"
       }
     },
     "vars": {
+      "BUNDLE_NO_PRUNE": "true",
       "DATABASE_URL": "postgresql://localhost:5432/Forem_development",
       "DATABASE_URL_TEST": "postgresql://localhost:5432/Forem_test",
       "PGGSSENCMODE": "disable",
@@ -98,7 +103,7 @@
       "REDIS_URL": "redis://localhost:6379"
     },
     "hook": {
-      "on-activate": "  # Gems (and foreman, which bin/dev installs) go to the Flox cache, never to\n  # the read-only Ruby install or ~/.gem.\n  export GEM_HOME=\"$FLOX_ENV_CACHE/gems\"\n  export PATH=\"$GEM_HOME/bin:$PATH\"\n  export PGDATA=\"$FLOX_ENV_CACHE/postgres\"\n  export FOREM_PGSOCKET=\"$FLOX_ENV_CACHE/pgsock\"\n  mkdir -p \"$GEM_HOME\" \"$FOREM_PGSOCKET\" \"$FLOX_ENV_CACHE/redis\"\n\n  if [ ! -d \"$PGDATA\" ]; then\n    echo \"→ initializing PostgreSQL 13 cluster\" >&2\n    initdb -D \"$PGDATA\" --username=\"$PGUSER\" --auth=trust --no-locale --encoding=UTF8 >&2\n  fi\n\n  cd \"$FLOX_ENV_PROJECT\"\n  if ! bundle check >/dev/null 2>&1; then\n    echo \"→ bundle install (first run compiles native gems — several minutes)\" >&2\n    BUNDLE_JOBS=8 bundle install >&2   # env var, so nothing is written to .bundle/config\n  fi\n\n  if [ ! -d node_modules ] || [ yarn.lock -nt node_modules ]; then\n    echo \"→ yarn install\" >&2\n    yarn install --immutable >&2 && touch node_modules\n  fi\n\n  if [ ! -f \"$FLOX_ENV_CACHE/.seeded\" ]; then\n    echo \"\" >&2\n    echo \"Next: flox services start   (if you didn't use 'flox activate -s')\" >&2\n    echo \"      bin/setup && touch \\\"\\$FLOX_ENV_CACHE/.seeded\\\"   # creates, migrates and seeds the database\" >&2\n    echo \"      bin/dev                                          # web, sidekiq, js watcher → http://localhost:3000\" >&2\n  fi\n"
+      "on-activate": "  # Gems (and foreman, which bin/dev installs) go to the Flox cache, never to\n  # the read-only Ruby install or ~/.gem.\n  export GEM_HOME=\"$FLOX_ENV_CACHE/gems\"\n  export PATH=\"$FLOX_ENV_PROJECT/.flox/bin:$GEM_HOME/bin:$PATH\"\n  export PGDATA=\"$FLOX_ENV_CACHE/postgres\"\n  export FOREM_PGSOCKET=\"$FLOX_ENV_CACHE/pgsock\"\n  mkdir -p \"$GEM_HOME\" \"$FOREM_PGSOCKET\" \"$FLOX_ENV_CACHE/redis\"\n\n  if [ ! -d \"$PGDATA\" ]; then\n    echo \"→ initializing PostgreSQL 13 cluster\" >&2\n    initdb -D \"$PGDATA\" --username=\"$PGUSER\" --auth=trust --no-locale --encoding=UTF8 >&2\n  fi\n\n  cd \"$FLOX_ENV_PROJECT\"\n  if ! bundle check >/dev/null 2>&1; then\n    echo \"→ bundle install (first run compiles native gems — several minutes)\" >&2\n    BUNDLE_JOBS=8 bundle install >&2   # env var, so nothing is written to .bundle/config\n  fi\n\n  if [ ! -d node_modules ] || [ yarn.lock -nt node_modules ]; then\n    echo \"→ yarn install\" >&2\n    yarn install --immutable >&2 && touch node_modules\n  fi\n\n  if [ ! -f \"$FLOX_ENV_CACHE/.seeded\" ]; then\n    echo \"\" >&2\n    echo \"Next: flox services start   (if you didn't use 'flox activate -s')\" >&2\n    echo \"      bin/setup && touch \\\"\\$FLOX_ENV_CACHE/.seeded\\\"   # creates, migrates and seeds the database\" >&2\n    echo \"      bin/dev                                          # web, sidekiq, js watcher → http://localhost:3000\" >&2\n  fi\n"
     },
     "options": {
       "systems": [
@@ -208,305 +213,6 @@
       },
       "system": "x86_64-linux",
       "group": "node",
-      "priority": 5
-    },
-    {
-      "attr_path": "yarn",
-      "broken": false,
-      "derivation": "/nix/store/46fwzv4c945aikic2djzc15y7k0yp1rd-yarn-1.22.22.drv",
-      "description": "Fast, reliable, and secure dependency management for javascript",
-      "install_id": "yarn",
-      "license": "BSD-2-Clause",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=d4f25a3e562008648d45bcf2d70bcc7422cad84e",
-      "name": "yarn-1.22.22",
-      "pname": "yarn",
-      "rev": "d4f25a3e562008648d45bcf2d70bcc7422cad84e",
-      "rev_count": 1117658,
-      "rev_date": "2026-11-11T08:42:49Z",
-      "scrape_date": "2026-11-13T05:52:02.371972Z",
-      "stabilities": [
-        "unstable",
-        "staging"
-      ],
-      "unfree": false,
-      "version": "1.22.22",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/ry31578yn9xja8s847mslpsiczj1gb6j-yarn-1.22.22"
-      },
-      "system": "aarch64-darwin",
-      "group": "node",
-      "priority": 5
-    },
-    {
-      "attr_path": "yarn",
-      "broken": false,
-      "derivation": "/nix/store/5szpbvrblm09z44d0n3ym7l8sczxnvlp-yarn-1.22.22.drv",
-      "description": "Fast, reliable, and secure dependency management for javascript",
-      "install_id": "yarn",
-      "license": "BSD-2-Clause",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=d4f25a3e562008648d45bcf2d70bcc7422cad84e",
-      "name": "yarn-1.22.22",
-      "pname": "yarn",
-      "rev": "d4f25a3e562008648d45bcf2d70bcc7422cad84e",
-      "rev_count": 1117658,
-      "rev_date": "2026-11-11T08:42:49Z",
-      "scrape_date": "2026-11-13T06:21:03.628346Z",
-      "stabilities": [
-        "unstable",
-        "staging"
-      ],
-      "unfree": false,
-      "version": "1.22.22",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/jnr7bp564fdf1yfxg4fib0w3dh85c4hs-yarn-1.22.22"
-      },
-      "system": "aarch64-linux",
-      "group": "node",
-      "priority": 5
-    },
-    {
-      "attr_path": "yarn",
-      "broken": false,
-      "derivation": "/nix/store/h6cazpdg6vcf166rggy317hnwykb7fnk-yarn-1.22.22.drv",
-      "description": "Fast, reliable, and secure dependency management for javascript",
-      "install_id": "yarn",
-      "license": "BSD-2-Clause",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=d4f25a3e562008648d45bcf2d70bcc7422cad84e",
-      "name": "yarn-1.22.22",
-      "pname": "yarn",
-      "rev": "d4f25a3e562008648d45bcf2d70bcc7422cad84e",
-      "rev_count": 1117658,
-      "rev_date": "2026-11-11T08:42:49Z",
-      "scrape_date": "2026-11-13T06:52:55.767515Z",
-      "stabilities": [
-        "unstable",
-        "staging"
-      ],
-      "unfree": false,
-      "version": "1.22.22",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/6av2zf0wgincwnxnc9z4aza67hzv3j59-yarn-1.22.22"
-      },
-      "system": "x86_64-linux",
-      "group": "node",
-      "priority": 5
-    },
-    {
-      "attr_path": "postgresql13Packages.pgvector",
-      "broken": false,
-      "derivation": "/nix/store/1in273dgwqpzsjhdg4b0b0nppd6pi4bs-pgvector-0.8.1.drv",
-      "description": "Open-source vector similarity search for PostgreSQL",
-      "install_id": "pgvector",
-      "license": "PostgreSQL",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
-      "name": "pgvector-0.8.1",
-      "pname": "pgvector",
-      "rev": "c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
-      "rev_count": 895122,
-      "rev_date": "2025-11-12T20:02:36Z",
-      "scrape_date": "2025-11-14T16:41:53.125309Z",
-      "stabilities": [
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "0.8.1",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/kmvwr2y7qb2d76c2fzqplk4g3jamv9mj-pgvector-0.8.1"
-      },
-      "system": "aarch64-darwin",
-      "group": "postgres",
-      "priority": 5
-    },
-    {
-      "attr_path": "postgresql13Packages.pgvector",
-      "broken": false,
-      "derivation": "/nix/store/6k0lnkspzyav3316ckdrx27jhxvylvfc-pgvector-0.8.1.drv",
-      "description": "Open-source vector similarity search for PostgreSQL",
-      "install_id": "pgvector",
-      "license": "PostgreSQL",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
-      "name": "pgvector-0.8.1",
-      "pname": "pgvector",
-      "rev": "c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
-      "rev_count": 895122,
-      "rev_date": "2025-11-12T20:02:36Z",
-      "scrape_date": "2025-11-14T17:19:22.014109Z",
-      "stabilities": [
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "0.8.1",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/6hxdi1n7k18v9siqfdsag9pzcz0zkyad-pgvector-0.8.1"
-      },
-      "system": "aarch64-linux",
-      "group": "postgres",
-      "priority": 5
-    },
-    {
-      "attr_path": "postgresql13Packages.pgvector",
-      "broken": false,
-      "derivation": "/nix/store/4xf2xykhkls96gip7xk5qlhsrcca79m1-pgvector-0.8.1.drv",
-      "description": "Open-source vector similarity search for PostgreSQL",
-      "install_id": "pgvector",
-      "license": "PostgreSQL",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
-      "name": "pgvector-0.8.1",
-      "pname": "pgvector",
-      "rev": "c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
-      "rev_count": 895122,
-      "rev_date": "2025-11-12T20:02:36Z",
-      "scrape_date": "2025-11-14T18:32:37.725001Z",
-      "stabilities": [
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "0.8.1",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/8dx303d184dbg74i3hn0qsdp7mm51gcn-pgvector-0.8.1"
-      },
-      "system": "x86_64-linux",
-      "group": "postgres",
-      "priority": 5
-    },
-    {
-      "attr_path": "postgresql_13",
-      "broken": false,
-      "derivation": "/nix/store/8zvj83qdlarkxfdcb79n7k5ifywqmnw5-postgresql-13.23.drv",
-      "description": "Powerful, open source object-relational database system",
-      "install_id": "postgresql",
-      "license": "PostgreSQL",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
-      "name": "postgresql-13.23",
-      "pname": "postgresql_13",
-      "rev": "c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
-      "rev_count": 895122,
-      "rev_date": "2025-11-12T20:02:36Z",
-      "scrape_date": "2025-11-14T16:41:53.876378Z",
-      "stabilities": [
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "13.23",
-      "outputs_to_install": [
-        "man",
-        "out"
-      ],
-      "outputs": {
-        "dev": "/nix/store/2nmn8rn1j5cjmws8mkx4r7gsr3dfszdv-postgresql-13.23-dev",
-        "doc": "/nix/store/n4cvlh18am71rpkpkxrvlcdw9zkcwpr0-postgresql-13.23-doc",
-        "jit": "/nix/store/spfcbisrspag7vayv9hj8ss35j5r93vn-postgresql-13.23-jit",
-        "lib": "/nix/store/x74879hrcsbz13r1nh7y7a741p8y3963-postgresql-13.23-lib",
-        "man": "/nix/store/dlg7gp7qxmyn620hvn93pc5zn2ws6gsw-postgresql-13.23-man",
-        "out": "/nix/store/km32b0iryr593hjhvgypf5vhzwsrrk8m-postgresql-13.23",
-        "plperl": "/nix/store/v3m8i45ck47adiq2cbbb9km3yd1zcmlw-postgresql-13.23-plperl",
-        "plpython3": "/nix/store/pm3xl24j5am4cq48179xvm83w0l5kd3n-postgresql-13.23-plpython3",
-        "pltcl": "/nix/store/6c8nwyihjcmn2yv8hnmwwq26sgsks3v3-postgresql-13.23-pltcl"
-      },
-      "system": "aarch64-darwin",
-      "group": "postgres",
-      "priority": 5
-    },
-    {
-      "attr_path": "postgresql_13",
-      "broken": false,
-      "derivation": "/nix/store/58l267g86ck83vqmywxg287k52x54w71-postgresql-13.23.drv",
-      "description": "Powerful, open source object-relational database system",
-      "install_id": "postgresql",
-      "license": "PostgreSQL",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
-      "name": "postgresql-13.23",
-      "pname": "postgresql_13",
-      "rev": "c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
-      "rev_count": 895122,
-      "rev_date": "2025-11-12T20:02:36Z",
-      "scrape_date": "2025-11-14T17:19:22.975638Z",
-      "stabilities": [
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "13.23",
-      "outputs_to_install": [
-        "man",
-        "out"
-      ],
-      "outputs": {
-        "debug": "/nix/store/lyrakgfflk89j9z7jk8nwjmwlyqnznyf-postgresql-13.23-debug",
-        "dev": "/nix/store/niips10iw17avf4xqc6asi5lgmfb1r0b-postgresql-13.23-dev",
-        "doc": "/nix/store/grw16dakvx7ymk8zvgxybcljjnq3s6vc-postgresql-13.23-doc",
-        "jit": "/nix/store/0ghqc2ncr7ad46fqsdwv1jnwybnfgrqv-postgresql-13.23-jit",
-        "lib": "/nix/store/f72ak86gw4irh1cq52m40j6s5fbqv8j0-postgresql-13.23-lib",
-        "man": "/nix/store/x04axvi3lvb1pcqvbmcjs3dsvi6nds50-postgresql-13.23-man",
-        "out": "/nix/store/b61mn7qvg989niqvapl6i1qf1ayfba68-postgresql-13.23",
-        "plperl": "/nix/store/ib2qm20sq03r9slwv756np6za6z1ck6j-postgresql-13.23-plperl",
-        "plpython3": "/nix/store/gx7axkqzahijv5llhj8hm243v9srhdx3-postgresql-13.23-plpython3",
-        "pltcl": "/nix/store/0dcvqbpp77cb47jz8g9r0sgfs4xaqk2m-postgresql-13.23-pltcl"
-      },
-      "system": "aarch64-linux",
-      "group": "postgres",
-      "priority": 5
-    },
-    {
-      "attr_path": "postgresql_13",
-      "broken": false,
-      "derivation": "/nix/store/0ajvxw8hzshf6k91vp730f3z06znjc5v-postgresql-13.23.drv",
-      "description": "Powerful, open source object-relational database system",
-      "install_id": "postgresql",
-      "license": "PostgreSQL",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
-      "name": "postgresql-13.23",
-      "pname": "postgresql_13",
-      "rev": "c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
-      "rev_count": 895122,
-      "rev_date": "2025-11-12T20:02:36Z",
-      "scrape_date": "2025-11-14T18:32:38.711406Z",
-      "stabilities": [
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "13.23",
-      "outputs_to_install": [
-        "man",
-        "out"
-      ],
-      "outputs": {
-        "debug": "/nix/store/cka3m4hzjhyrv7i351j0vvzfddsc5yxr-postgresql-13.23-debug",
-        "dev": "/nix/store/5wvkmipv3b833qvzmwxy0k08xcmkyip5-postgresql-13.23-dev",
-        "doc": "/nix/store/4hczdx6f6jn883v695b3ngw517n1s4yj-postgresql-13.23-doc",
-        "jit": "/nix/store/b15d8b78vmvvk45jva6ys6v7bds3j3b6-postgresql-13.23-jit",
-        "lib": "/nix/store/z31yny50s1yi8zsmmc3g6c07zim24vcb-postgresql-13.23-lib",
-        "man": "/nix/store/ysdblvq8vw94j2r9dpjp5qjc8sxh0yw5-postgresql-13.23-man",
-        "out": "/nix/store/aklvh2vrfbn1xcwl8ggr2kc8xw1pbswg-postgresql-13.23",
-        "plperl": "/nix/store/70wswngi075q1qhsv89ws5pkick1azxn-postgresql-13.23-plperl",
-        "plpython3": "/nix/store/cjh45rd53pn410kw0zla8nl35yylnr6h-postgresql-13.23-plpython3",
-        "pltcl": "/nix/store/80mwk2q5hkhv0j7w8kfxnlb45dxd4qac-postgresql-13.23-pltcl"
-      },
-      "system": "x86_64-linux",
-      "group": "postgres",
       "priority": 5
     },
     {
@@ -1316,6 +1022,247 @@
       },
       "system": "aarch64-linux",
       "group": "rust",
+      "priority": 5
+    },
+    {
+      "attr_path": "libpq",
+      "broken": false,
+      "derivation": "/nix/store/hdpbcqydbqijz4mhbdf3jhf9v412fdj1-libpq-18.1.drv",
+      "description": "C application programmer's interface to PostgreSQL",
+      "install_id": "libpq",
+      "license": "PostgreSQL",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
+      "name": "libpq-18.1",
+      "pname": "libpq",
+      "rev": "c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
+      "rev_count": 895122,
+      "rev_date": "2025-11-12T20:02:36Z",
+      "scrape_date": "2025-11-14T17:18:49.940437Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "18.1",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "debug": "/nix/store/1kfkcza4k6xhfmjb67jq5ha5ljd38gsg-libpq-18.1-debug",
+        "dev": "/nix/store/2qp5vam4fnj21apgbxl9m9zvs88805g6-libpq-18.1-dev",
+        "out": "/nix/store/6v2w9zc69xaxjvp3kfaqpsx8n2w94xlc-libpq-18.1"
+      },
+      "system": "aarch64-linux",
+      "group": "postgres",
+      "priority": 5
+    },
+    {
+      "attr_path": "postgresql13Packages.pgvector",
+      "broken": false,
+      "derivation": "/nix/store/1in273dgwqpzsjhdg4b0b0nppd6pi4bs-pgvector-0.8.1.drv",
+      "description": "Open-source vector similarity search for PostgreSQL",
+      "install_id": "pgvector",
+      "license": "PostgreSQL",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
+      "name": "pgvector-0.8.1",
+      "pname": "pgvector",
+      "rev": "c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
+      "rev_count": 895122,
+      "rev_date": "2025-11-12T20:02:36Z",
+      "scrape_date": "2025-11-14T16:41:53.125309Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.8.1",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/kmvwr2y7qb2d76c2fzqplk4g3jamv9mj-pgvector-0.8.1"
+      },
+      "system": "aarch64-darwin",
+      "group": "postgres",
+      "priority": 5
+    },
+    {
+      "attr_path": "postgresql13Packages.pgvector",
+      "broken": false,
+      "derivation": "/nix/store/6k0lnkspzyav3316ckdrx27jhxvylvfc-pgvector-0.8.1.drv",
+      "description": "Open-source vector similarity search for PostgreSQL",
+      "install_id": "pgvector",
+      "license": "PostgreSQL",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
+      "name": "pgvector-0.8.1",
+      "pname": "pgvector",
+      "rev": "c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
+      "rev_count": 895122,
+      "rev_date": "2025-11-12T20:02:36Z",
+      "scrape_date": "2025-11-14T17:19:22.014109Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.8.1",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/6hxdi1n7k18v9siqfdsag9pzcz0zkyad-pgvector-0.8.1"
+      },
+      "system": "aarch64-linux",
+      "group": "postgres",
+      "priority": 5
+    },
+    {
+      "attr_path": "postgresql13Packages.pgvector",
+      "broken": false,
+      "derivation": "/nix/store/4xf2xykhkls96gip7xk5qlhsrcca79m1-pgvector-0.8.1.drv",
+      "description": "Open-source vector similarity search for PostgreSQL",
+      "install_id": "pgvector",
+      "license": "PostgreSQL",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
+      "name": "pgvector-0.8.1",
+      "pname": "pgvector",
+      "rev": "c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
+      "rev_count": 895122,
+      "rev_date": "2025-11-12T20:02:36Z",
+      "scrape_date": "2025-11-14T18:32:37.725001Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.8.1",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/8dx303d184dbg74i3hn0qsdp7mm51gcn-pgvector-0.8.1"
+      },
+      "system": "x86_64-linux",
+      "group": "postgres",
+      "priority": 5
+    },
+    {
+      "attr_path": "postgresql_13",
+      "broken": false,
+      "derivation": "/nix/store/8zvj83qdlarkxfdcb79n7k5ifywqmnw5-postgresql-13.23.drv",
+      "description": "Powerful, open source object-relational database system",
+      "install_id": "postgresql",
+      "license": "PostgreSQL",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
+      "name": "postgresql-13.23",
+      "pname": "postgresql_13",
+      "rev": "c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
+      "rev_count": 895122,
+      "rev_date": "2025-11-12T20:02:36Z",
+      "scrape_date": "2025-11-14T16:41:53.876378Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "13.23",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "dev": "/nix/store/2nmn8rn1j5cjmws8mkx4r7gsr3dfszdv-postgresql-13.23-dev",
+        "doc": "/nix/store/n4cvlh18am71rpkpkxrvlcdw9zkcwpr0-postgresql-13.23-doc",
+        "jit": "/nix/store/spfcbisrspag7vayv9hj8ss35j5r93vn-postgresql-13.23-jit",
+        "lib": "/nix/store/x74879hrcsbz13r1nh7y7a741p8y3963-postgresql-13.23-lib",
+        "man": "/nix/store/dlg7gp7qxmyn620hvn93pc5zn2ws6gsw-postgresql-13.23-man",
+        "out": "/nix/store/km32b0iryr593hjhvgypf5vhzwsrrk8m-postgresql-13.23",
+        "plperl": "/nix/store/v3m8i45ck47adiq2cbbb9km3yd1zcmlw-postgresql-13.23-plperl",
+        "plpython3": "/nix/store/pm3xl24j5am4cq48179xvm83w0l5kd3n-postgresql-13.23-plpython3",
+        "pltcl": "/nix/store/6c8nwyihjcmn2yv8hnmwwq26sgsks3v3-postgresql-13.23-pltcl"
+      },
+      "system": "aarch64-darwin",
+      "group": "postgres",
+      "priority": 5
+    },
+    {
+      "attr_path": "postgresql_13",
+      "broken": false,
+      "derivation": "/nix/store/58l267g86ck83vqmywxg287k52x54w71-postgresql-13.23.drv",
+      "description": "Powerful, open source object-relational database system",
+      "install_id": "postgresql",
+      "license": "PostgreSQL",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
+      "name": "postgresql-13.23",
+      "pname": "postgresql_13",
+      "rev": "c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
+      "rev_count": 895122,
+      "rev_date": "2025-11-12T20:02:36Z",
+      "scrape_date": "2025-11-14T17:19:22.975638Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "13.23",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "debug": "/nix/store/lyrakgfflk89j9z7jk8nwjmwlyqnznyf-postgresql-13.23-debug",
+        "dev": "/nix/store/niips10iw17avf4xqc6asi5lgmfb1r0b-postgresql-13.23-dev",
+        "doc": "/nix/store/grw16dakvx7ymk8zvgxybcljjnq3s6vc-postgresql-13.23-doc",
+        "jit": "/nix/store/0ghqc2ncr7ad46fqsdwv1jnwybnfgrqv-postgresql-13.23-jit",
+        "lib": "/nix/store/f72ak86gw4irh1cq52m40j6s5fbqv8j0-postgresql-13.23-lib",
+        "man": "/nix/store/x04axvi3lvb1pcqvbmcjs3dsvi6nds50-postgresql-13.23-man",
+        "out": "/nix/store/b61mn7qvg989niqvapl6i1qf1ayfba68-postgresql-13.23",
+        "plperl": "/nix/store/ib2qm20sq03r9slwv756np6za6z1ck6j-postgresql-13.23-plperl",
+        "plpython3": "/nix/store/gx7axkqzahijv5llhj8hm243v9srhdx3-postgresql-13.23-plpython3",
+        "pltcl": "/nix/store/0dcvqbpp77cb47jz8g9r0sgfs4xaqk2m-postgresql-13.23-pltcl"
+      },
+      "system": "aarch64-linux",
+      "group": "postgres",
+      "priority": 5
+    },
+    {
+      "attr_path": "postgresql_13",
+      "broken": false,
+      "derivation": "/nix/store/0ajvxw8hzshf6k91vp730f3z06znjc5v-postgresql-13.23.drv",
+      "description": "Powerful, open source object-relational database system",
+      "install_id": "postgresql",
+      "license": "PostgreSQL",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
+      "name": "postgresql-13.23",
+      "pname": "postgresql_13",
+      "rev": "c5ae371f1a6a7fd27823bc500d9390b38c05fa55",
+      "rev_count": 895122,
+      "rev_date": "2025-11-12T20:02:36Z",
+      "scrape_date": "2025-11-14T18:32:38.711406Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "13.23",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "debug": "/nix/store/cka3m4hzjhyrv7i351j0vvzfddsc5yxr-postgresql-13.23-debug",
+        "dev": "/nix/store/5wvkmipv3b833qvzmwxy0k08xcmkyip5-postgresql-13.23-dev",
+        "doc": "/nix/store/4hczdx6f6jn883v695b3ngw517n1s4yj-postgresql-13.23-doc",
+        "jit": "/nix/store/b15d8b78vmvvk45jva6ys6v7bds3j3b6-postgresql-13.23-jit",
+        "lib": "/nix/store/z31yny50s1yi8zsmmc3g6c07zim24vcb-postgresql-13.23-lib",
+        "man": "/nix/store/ysdblvq8vw94j2r9dpjp5qjc8sxh0yw5-postgresql-13.23-man",
+        "out": "/nix/store/aklvh2vrfbn1xcwl8ggr2kc8xw1pbswg-postgresql-13.23",
+        "plperl": "/nix/store/70wswngi075q1qhsv89ws5pkick1azxn-postgresql-13.23-plperl",
+        "plpython3": "/nix/store/cjh45rd53pn410kw0zla8nl35yylnr6h-postgresql-13.23-plpython3",
+        "pltcl": "/nix/store/80mwk2q5hkhv0j7w8kfxnlb45dxd4qac-postgresql-13.23-pltcl"
+      },
+      "system": "x86_64-linux",
+      "group": "postgres",
       "priority": 5
     }
   ]

@@ -28,10 +28,10 @@ with his work, his measurements should win.
 | Ruby **exactly** 3.3.0 | `.ruby-version`; Gemfile line 5 reads that file verbatim | `ruby_3_3` pinned to `3.3.0` |
 | Bundler 2.4.17 | `Gemfile.lock` BUNDLED WITH | Bundler switches to it automatically |
 | Node 22.23.4 | `.nvmrc`, `engines.node` | `nodejs_22` pinned to `22.23.4` |
-| Yarn 4.1.0 | `.yarnrc.yml` `yarnPath` | Any `yarn` delegates to the committed release |
+| Yarn 4.1.0 | `.yarnrc.yml` `yarnPath` | `.flox/bin/yarn` runs the committed release with the environment's Node; no Yarn package |
 | PostgreSQL 13 + `vector` extension | `.mise.toml`, `docker-compose.yml`, `db/schema.rb` | `postgresql_13` 13.23 + `pgvector` 0.8.1, as a Flox service |
 | Redis | `.mise.toml` (6.0.9), compose (7.0) | `redis` 7.2.4, as a Flox service |
-| libvips, ImageMagick | `ruby-vips`, `mini_magick` gems | `vips` 8.15.2 (shared library output), `imagemagick` 7.1.1 |
+| libvips, ImageMagick | `ruby-vips`, `mini_magick` gems | `vips` 8.15.2 (shared library output only), `imagemagick` 7.1.1 |
 | OpenSSL, libyaml headers | `openssl` gem (via rpush), `psych` | `openssl` and `libyaml` with `dev` outputs |
 | Rust | `gems/forem_native` | Only on aarch64-linux; other platforms use the committed prebuilt binaries |
 | 417 gems, 1,415 npm packages | `Gemfile.lock`, `yarn.lock` | `bundle install` and `yarn install --immutable` in the activation hook |
@@ -65,8 +65,8 @@ watcher. All state lives in `.flox/cache`, inside the checkout.
 
 - **Four package groups, not one.** Ruby 3.3.0 only exists in an early-2024
   catalog snapshot, and pinning it drags its whole group back to 2024. So
-  Ruby and the libraries its native gems link against form one group, Node and
-  Yarn resolve current in another, Postgres and pgvector in a third, and Rust
+  Ruby and the libraries its native gems link against form one group, Node
+  resolves current in another, Postgres and pgvector in a third, and Rust
   in a fourth. Each split is recorded in the manifest with the reason.
 - **Postgres serves loopback TCP on 5432 as well as a socket.** `bin/setup`
   copies `.env_sample` to `.env`, which hard-codes
@@ -117,6 +117,20 @@ manifest with a comment explaining it.
 4. **`bundle install --jobs` was persisting into `.bundle/config`.** It's now
    passed as an environment variable instead.
 
+## Download size (updated 20 Nov)
+
+Three manifest entries each pulled in a whole extra toolchain on macOS, none
+of them needed there. Dropping them cut the aarch64-darwin download from
+621 MB (257 packages) to 285 MB (168 packages):
+
+- PostgreSQL's `dev` output (LLVM 20 and 21, Clang 21, apple-sdk, Python
+  3.13, about 300 MB). The `pg` gem ships prebuilt for macOS and x86_64
+  Linux; `libpq` with headers is now installed on aarch64-linux only.
+- The catalog `yarn` package (a second Node, 24). Replaced by a two-line shim.
+- vips's `bin` output (Python 3.11 for `vipsprofile`).
+
+Linux hasn't been re-verified after this change.
+
 ## Needs attention
 
 - **`bin/setup` deletes six tracked files.** It turns on Bundler's
@@ -124,8 +138,9 @@ manifest with a comment explaining it.
   longer in `Gemfile.lock` (`emoji_regex`, `gemoji`, `rbs`, `ruby-lsp`,
   `ruby-lsp-rails`, `wcag_color_contrast`). That happens with or without Flox,
   and leaves every new contributor with a dirty tree before their first change.
-  These were restored with `git checkout -- vendor/cache`. Removing the stale
-  files upstream fixes it.
+  These were restored with `git checkout -- vendor/cache`. The environment
+  now sets `BUNDLE_NO_PRUNE=true`, which stops it; removing the stale files
+  upstream would fix it for everyone.
 - **One deterministic spec failure.** `forem_native_spec.rb:3702` fails on
   iteration 0 with a fixed seed: `order_subforem_ids` from the Rust extension
   disagrees with the Ruby reference. It's a pure function, so the environment
@@ -172,7 +187,8 @@ environment safe for parallel agents, all small:
    hard-coding TCP.
 2. Run services so they outlive a single `-c` command, for example with a
    long-lived `flox activate -s` session per worktree.
-3. Fix `bin/setup`'s `vendor/cache` pruning so a fresh checkout stays clean.
+3. Remove the six stale gems from `vendor/cache` (the environment works around
+   the pruning with `BUNDLE_NO_PRUNE`).
 
 A published base environment (runtimes, Postgres, Redis) included from the
 repo's `.flox/` would let branches change dependencies without republishing.
